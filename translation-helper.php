@@ -684,11 +684,20 @@ function ptp_settings_page() {
                         <label for="ptp_google_translate_api_key">Google Translate API Key</label>
                     </th>
                     <td>
-                        <input type="text" 
-                               id="ptp_google_translate_api_key" 
-                               name="ptp_google_translate_api_key" 
-                               value="<?php echo esc_attr($api_key); ?>" 
-                               class="regular-text">
+                        <div class="ptp-api-key-wrapper">
+                            <input type="password" 
+                                   id="ptp_google_translate_api_key" 
+                                   name="ptp_google_translate_api_key" 
+                                   value="<?php echo esc_attr($api_key); ?>" 
+                                   class="regular-text">
+                            <button type="button" 
+                                    class="ptp-toggle-api-key button button-secondary" 
+                                    aria-label="<?php esc_attr_e('Show/Hide API Key', 'polylang-translation-preview'); ?>"
+                                    title="<?php esc_attr_e('Toggle API key visibility', 'polylang-translation-preview'); ?>">
+                                <span class="dashicons dashicons-visibility" aria-hidden="true"></span>
+                                <span class="dashicons dashicons-hidden" aria-hidden="true"></span>
+                            </button>
+                        </div>
                         <div class="description ptp-setup-instructions">
                             <p><strong>To get your Google Cloud Translation API key:</strong></p>
                             <ol>
@@ -763,5 +772,45 @@ function ptp_settings_page() {
             </p>
         </form>
     </div>
+    
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        // API Key visibility toggle
+        $('.ptp-toggle-api-key').on('click', function(e) {
+            e.preventDefault();
+            
+            const $button = $(this);
+            const $wrapper = $button.closest('.ptp-api-key-wrapper');
+            const $input = $wrapper.find('input');
+            const isHidden = $wrapper.hasClass('ptp-api-key-hidden');
+            
+            if (isHidden) {
+                // Show the API key
+                $input.attr('type', 'password');
+                $wrapper.removeClass('ptp-api-key-hidden');
+                $button.attr('title', '<?php esc_attr_e('Hide API key', 'polylang-translation-preview'); ?>');
+            } else {
+                // Hide the API key
+                $input.attr('type', 'text');
+                $wrapper.addClass('ptp-api-key-hidden');
+                $button.attr('title', '<?php esc_attr_e('Show API key', 'polylang-translation-preview'); ?>');
+            }
+            
+            // Move cursor to end of input
+            const input = $input[0];
+            if (input.setSelectionRange) {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            }
+        });
+        
+        // Initialize with hidden state if there's a value
+        const $apiKeyInput = $('#ptp_google_translate_api_key');
+        if ($apiKeyInput.val().length > 0) {
+            // Start in password mode (hidden)
+            $apiKeyInput.attr('type', 'password');
+        }
+    });
+    </script>
     <?php
 }
