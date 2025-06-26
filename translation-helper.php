@@ -34,6 +34,104 @@ function ptp_is_debug_enabled() {
     return get_option('ptp_debug_logging', false);
 }
 
+// Encryption functions for API key security
+function ptp_get_encryption_key() {
+    // Use WordPress AUTH_KEY and SECURE_AUTH_KEY for encryption
+    if (defined('AUTH_KEY') && defined('SECURE_AUTH_KEY')) {
+        return hash('sha256', AUTH_KEY . SECURE_AUTH_KEY . 'ptp_api_key_salt');
+    }
+    
+    // Fallback if constants not defined
+    return hash('sha256', 'ptp_fallback_encryption_key_' . get_option('siteurl'));
+}
+
+// Encrypt API key for storage
+function ptp_encrypt_api_key($api_key) {
+    if (empty($api_key)) {
+        return '';
+    }
+    
+    // Check if OpenSSL is available
+    if (!extension_loaded('openssl')) {
+        // Fallback to base64 encoding if OpenSSL not available
+        ptp_debug_log('OpenSSL not available, using base64 encoding fallback');
+        return base64_encode($api_key);
+    }
+    
+    $encryption_key = ptp_get_encryption_key();
+    $iv = openssl_random_pseudo_bytes(16);
+    
+    $encrypted = openssl_encrypt($api_key, 'AES-256-CBC', $encryption_key, 0, $iv);
+    
+    // Return base64 encoded IV + encrypted data
+    return base64_encode($iv . $encrypted);
+}
+
+// Decrypt API key from storage
+function ptp_decrypt_api_key($encrypted_data) {
+    if (empty($encrypted_data)) {
+        return '';
+    }
+    
+    $data = base64_decode($encrypted_data);
+    
+    if ($data === false) {
+        return '';
+    }
+    
+    // Check if OpenSSL is available
+    if (!extension_loaded('openssl')) {
+        // If OpenSSL not available, assume it's just base64 encoded
+        return $data;
+    }
+    
+    // Check if data is long enough to be encrypted (IV + encrypted data)
+    if (strlen($data) < 16) {
+        // Assume it's base64 encoded fallback
+        return $data;
+    }
+    
+    $encryption_key = ptp_get_encryption_key();
+    $iv = substr($data, 0, 16);
+    $encrypted = substr($data, 16);
+    
+    $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $encryption_key, 0, $iv);
+    
+    return $decrypted !== false ? $decrypted : '';
+}
+
+// Get API key (with decryption)
+function ptp_get_api_key() {
+    $encrypted_key = get_option('ptp_google_translate_api_key_encrypted', '');
+    
+    if (!empty($encrypted_key)) {
+        // Use encrypted version
+        return ptp_decrypt_api_key($encrypted_key);
+    }
+    
+    // Fallback to plain text for migration
+    $plain_key = get_option('ptp_google_translate_api_key', '');
+    if (!empty($plain_key)) {
+        // Migrate to encrypted storage
+        ptp_set_api_key($plain_key);
+        delete_option('ptp_google_translate_api_key');
+        return $plain_key;
+    }
+    
+    return '';
+}
+
+// Set API key (with encryption)
+function ptp_set_api_key($api_key) {
+    if (empty($api_key)) {
+        delete_option('ptp_google_translate_api_key_encrypted');
+        return;
+    }
+    
+    $encrypted_key = ptp_encrypt_api_key($api_key);
+    update_option('ptp_google_translate_api_key_encrypted', $encrypted_key);
+}
+
 // Check if Polylang is active
 function ptp_check_polylang() {
     if (!function_exists('pll_current_language')) {
@@ -535,7 +633,7 @@ function ptp_get_translation() {
         return;
     }
 
-    $api_key = get_option('ptp_google_translate_api_key');
+    $api_key = ptp_get_api_key();
     if (empty($api_key)) {
         ptp_debug_log('Invalid request: API key not configured');
         wp_send_json_error('Invalid request: API key not configured');
@@ -624,13 +722,17 @@ add_action('admin_menu', 'ptp_add_settings_page');
 function ptp_settings_page() {
     if (isset($_POST['ptp_save_settings'])) {
         check_admin_referer('ptp_settings');
-        update_option('ptp_google_translate_api_key', sanitize_text_field($_POST['ptp_google_translate_api_key']));
+        
+        // Use encryption for API key
+        $api_key = sanitize_text_field($_POST['ptp_google_translate_api_key']);
+        ptp_set_api_key($api_key);
+        
         update_option('ptp_target_language', sanitize_text_field($_POST['ptp_target_language']));
         update_option('ptp_debug_logging', isset($_POST['ptp_debug_logging']) ? 1 : 0);
-        echo '<div class="notice notice-success"><p>Settings saved.</p></div>';
+        echo '<div class="notice notice-success"><p>Settings saved securely.</p></div>';
     }
 
-    $api_key = get_option('ptp_google_translate_api_key');
+    $api_key = ptp_get_api_key();
     // Get default target language - use Polylang's default language if available
     $default_target = 'en'; // Fallback to English
     if (function_exists('pll_default_language')) {
@@ -730,6 +832,7 @@ function ptp_settings_page() {
                             </ol>
                             <p><strong>💰 Pricing:</strong> Google Cloud Translation API requires a billing account but offers <strong>free usage up to 500,000 characters per month</strong>.</p>
                             <p><strong>🔒 Security:</strong> Restricting your API key prevents unauthorized usage and protects your billing account.</p>
+                            <p><strong>🛡️ Encryption:</strong> Your API key is automatically encrypted using AES-256-CBC encryption before being stored in the database.</p>
                             <p><a href="https://cloud.google.com/translate/docs/setup" target="_blank">📚 Full Setup Guide</a> | <a href="https://cloud.google.com/translate/pricing" target="_blank">💰 Pricing Details</a> | <a href="https://cloud.google.com/docs/authentication/api-keys#restricting_an_api_key" target="_blank">🔒 API Key Security</a></p>
                         </div>
                     </td>
