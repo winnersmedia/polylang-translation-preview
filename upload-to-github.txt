@@ -1,0 +1,64 @@
+POLYLANG TRANSLATION PREVIEW - GitHub Upload Instructions
+===========================================================
+
+Repository: https://github.com/winnersmedia/polylang-translation-preview
+
+FILES TO UPLOAD:
+---------------
+✓ translation-helper.php (main plugin file)
+✓ css/admin.css (stylesheet)
+✓ js/admin.js (JavaScript functionality)
+✓ README.md (comprehensive documentation)
+✓ .gitignore (git exclusions)
+✓ CHANGELOG.md (version history)
+✓ CONTRIBUTING.md (contribution guidelines)
+
+COMMIT MESSAGE SUGGESTION:
+-------------------------
+🚀 Initial release v1.0.0 - Polylang Translation Preview
+
+✨ Features:
+• Google Translate integration with live preview tooltips
+• Smart language detection using Polylang locales  
+• HTML formatting preservation in translations
+• Equivalent language filtering (en_GB ↔ en_CA)
+• Configurable debug logging
+• Comprehensive setup instructions
+• Security best practices for API key management
+
+🏢 Created by Winners Media Limited
+🌐 https://www.winnersmedia.co.uk
+
+RELEASE NOTES (for GitHub release):
+----------------------------------
+## Polylang Translation Preview v1.0.0
+
+### What's New
+- **Instant Translation Previews**: Select any text in WordPress admin to see live Google Translate tooltips
+- **Polylang Integration**: Automatically uses your configured Polylang languages and locales
+- **Smart Language Detection**: Distinguishes between en_GB and en_CA, skipping unnecessary translations
+- **HTML Preservation**: Maintains formatting (bold, italic, links) in translated content
+- **Security First**: Comprehensive Google Cloud API setup with security best practices
+
+### Requirements
+- WordPress 5.0+
+- PHP 7.4+
+- Polylang plugin
+- Google Cloud Translation API key
+
+### Installation
+1. Download and extract to `/wp-content/plugins/`
+2. Activate plugin in WordPress admin
+3. Configure Google Cloud API key in Settings → Translation Preview
+4. Select your default target language from Polylang languages
+
+Perfect for multilingual WordPress sites using Polylang! 🌍
+
+NEXT STEPS:
+----------
+1. Upload all files to your GitHub repository
+2. Create a release with tag v1.0.0
+3. Add repository topics: wordpress, polylang, translation, google-translate
+4. Share the repository link!
+
+Repository will be ready for public use with proper Winners Media Limited attribution.
